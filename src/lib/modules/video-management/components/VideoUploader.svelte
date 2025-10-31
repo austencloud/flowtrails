@@ -2,10 +2,11 @@
   import { createVideoState } from '../state/video-state.svelte';
   
   // Props
-  let { 
+  let {
     onVideoLoaded = () => {},
     acceptedFormats = '.mp4,.webm,.mov,.avi',
-    maxSizeMB = 500 
+    maxSizeMB = 500,
+    compact = false
   } = $props();
 
   // State
@@ -73,6 +74,7 @@
   <!-- Drop Zone -->
   <div
     class="drop-zone"
+    class:compact
     class:drag-over={dragOver}
     class:has-video={videoState.hasVideo}
     ondragover={handleDragOver}
@@ -83,35 +85,52 @@
     onclick={() => fileInput.click()}
     onkeydown={(e) => e.key === 'Enter' && fileInput.click()}
   >
-    {#if videoState.loading}
-      <div class="loading">
-        <div class="spinner"></div>
-        <p>Loading video...</p>
-      </div>
-    {:else if videoState.error}
-      <div class="error">
-        <p>❌ {videoState.error}</p>
-        <button onclick={() => fileInput.click()}>Try Again</button>
-      </div>
-    {:else if videoState.currentVideo}
-      <div class="video-info">
-        <p>✅ Video loaded successfully</p>
-        <div class="metadata">
-          <span>{videoState.currentVideo.metadata.width}×{videoState.currentVideo.metadata.height}</span>
-          <span>{videoState.currentVideo.metadata.duration.toFixed(1)}s</span>
-          <span>{formatFileSize(videoState.currentVideo.file.size)}</span>
+    {#if compact}
+      <!-- Compact Header Version -->
+      {#if videoState.loading}
+        <div class="compact-loading">
+          <div class="mini-spinner"></div>
+          <span>Loading...</span>
         </div>
-        <button onclick={(e) => { e.stopPropagation(); videoState.unloadVideo(); }}>Remove Video</button>
-      </div>
+      {:else if videoState.error}
+        <button class="compact-btn error-btn">❌ Error</button>
+      {:else if videoState.currentVideo}
+        <button class="compact-btn success-btn">✅ Video Loaded</button>
+      {:else}
+        <button class="compact-btn upload-btn">📹 Upload Video</button>
+      {/if}
     {:else}
-      <div class="upload-prompt">
-        <div class="icon">📹</div>
-        <h3>Upload Video</h3>
-        <p>Drag and drop a video file here, or click to browse</p>
-        <div class="supported-formats">
-          <small>Supported formats: MP4, WebM, MOV, AVI (max {maxSizeMB}MB)</small>
+      <!-- Full Version -->
+      {#if videoState.loading}
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Loading video...</p>
         </div>
-      </div>
+      {:else if videoState.error}
+        <div class="error">
+          <p>❌ {videoState.error}</p>
+          <button onclick={() => fileInput.click()}>Try Again</button>
+        </div>
+      {:else if videoState.currentVideo}
+        <div class="video-info">
+          <p>✅ Video loaded successfully</p>
+          <div class="metadata">
+            <span>{videoState.currentVideo.metadata.width}×{videoState.currentVideo.metadata.height}</span>
+            <span>{videoState.currentVideo.metadata.duration.toFixed(1)}s</span>
+            <span>{formatFileSize(videoState.currentVideo.file.size)}</span>
+          </div>
+          <button onclick={(e) => { e.stopPropagation(); videoState.unloadVideo(); }}>Remove Video</button>
+        </div>
+      {:else}
+        <div class="upload-prompt">
+          <div class="icon">📹</div>
+          <h3>Upload Video</h3>
+          <p>Drag and drop a video file here, or click to browse</p>
+          <div class="supported-formats">
+            <small>Supported formats: MP4, WebM, MOV, AVI (max {maxSizeMB}MB)</small>
+          </div>
+        </div>
+      {/if}
     {/if}
   </div>
 </div>
@@ -145,6 +164,70 @@
   .drop-zone.has-video {
     border-color: #28a745;
     background: #f8fff9;
+  }
+
+  /* Compact Mode */
+  .drop-zone.compact {
+    border: none;
+    border-radius: 6px;
+    padding: 0;
+    background: transparent;
+    width: auto;
+    min-width: 140px;
+  }
+
+  .drop-zone.compact:hover {
+    background: transparent;
+    transform: none;
+  }
+
+  .compact-btn {
+    background: rgba(40, 40, 40, 0.9);
+    color: #e0e0e0;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .compact-btn:hover {
+    background: rgba(50, 50, 50, 0.9);
+    border-color: #666;
+  }
+
+  .compact-btn.upload-btn:hover {
+    border-color: #00d4ff;
+    color: #00d4ff;
+  }
+
+  .compact-btn.success-btn {
+    border-color: #4ade80;
+    color: #4ade80;
+  }
+
+  .compact-btn.error-btn {
+    border-color: #ef4444;
+    color: #ef4444;
+  }
+
+  .compact-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #00d4ff;
+    font-size: 0.85rem;
+  }
+
+  .mini-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    border-top: 2px solid #00d4ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
   }
 
   .upload-prompt .icon {

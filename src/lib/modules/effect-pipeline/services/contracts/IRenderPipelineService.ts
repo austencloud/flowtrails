@@ -2,12 +2,12 @@
  * Contract for render pipeline service
  */
 
-import type { 
-  RenderPipelineConfig, 
-  RenderBackend, 
-  PipelineInitializationResult,
-  ProcessingCapabilities 
+import type {
+  RenderPipelineConfig,
+  RenderBackend,
+  PipelineInitializationResult
 } from '../../domain/render-pipeline-models';
+import type { ProcessingCapabilities } from '$shared/types/EffectTypes';
 import type { EffectPipeline } from '$shared';
 
 export interface IRenderPipelineService {

@@ -2,7 +2,7 @@
  * Contract for capability detection service
  */
 
-import type { ProcessingCapabilities } from '../../domain/render-pipeline-models';
+import type { ProcessingCapabilities } from '$shared/types/EffectTypes';
 
 export interface ICapabilityDetectionService {
   /**

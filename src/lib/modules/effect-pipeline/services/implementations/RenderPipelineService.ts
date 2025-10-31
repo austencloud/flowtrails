@@ -7,12 +7,12 @@ import { TYPES } from '$shared/inversify';
 import { MODULE_EVENTS, ModuleEventDispatcher } from '$shared';
 import type { IRenderPipelineService } from '../contracts/IRenderPipelineService';
 import type { ICapabilityDetectionService } from '../contracts/ICapabilityDetectionService';
-import type { 
-  RenderPipelineConfig, 
-  RenderBackend, 
-  PipelineInitializationResult,
-  ProcessingCapabilities 
-} from '../../domain/RenderPipeline';
+import type {
+  RenderPipelineConfig,
+  RenderBackend,
+  PipelineInitializationResult
+} from '../../domain/render-pipeline-models';
+import type { ProcessingCapabilities } from '$shared/types/EffectTypes';
 import type { EffectPipeline } from '$shared';
 
 @injectable()

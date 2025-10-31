@@ -20,11 +20,5 @@ export interface PipelineInitializationResult {
   renderTargets: EffectPipeline;
 }
 
-export interface ProcessingCapabilities {
-  maxResolution: { width: number; height: number };
-  maxFPS: number;
-  supportsWebGPU: boolean;
-  supportsWebGL2: boolean;
-  supportsFloatTextures: boolean;
-  memoryLimit: number; // MB
-}
+// Import ProcessingCapabilities from shared types
+import type { ProcessingCapabilities } from '$shared/types/EffectTypes';

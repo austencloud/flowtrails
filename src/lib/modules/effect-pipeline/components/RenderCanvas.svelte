@@ -128,7 +128,7 @@
       </div>
       <div class="info-item">
         <span class="label">High Performance:</span>
-        <span class="value">{pipelineState.supportsHighPerformance ? '✅' : '❌'}</span>
+        <span class="value">{pipelineState.supportsHighPerformance() ? '✅' : '❌'}</span>
       </div>
       <div class="info-item">
         <span class="label">Resolution:</span>

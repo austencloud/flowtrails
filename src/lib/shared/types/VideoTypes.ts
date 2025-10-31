@@ -3,6 +3,9 @@
  */
 
 export interface VideoMetadata {
+  name: string;
+  size: number;
+  type: string;
   duration: number;
   width: number;
   height: number;

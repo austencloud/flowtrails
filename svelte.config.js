@@ -17,8 +17,7 @@ const config = {
 			$shared: './src/lib/shared',
 			$video: './src/lib/modules/video-management',
 			$pipeline: './src/lib/modules/effect-pipeline',
-			$threshold: './src/lib/modules/threshold-detection',
-			$trails: './src/lib/modules/trail-effects',
+			$effects: './src/lib/modules/effects',
 			$export: './src/lib/modules/video-export'
 		}
 	}

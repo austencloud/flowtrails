@@ -21,7 +21,7 @@ export class VideoManager {
     element.src = url;
     element.crossOrigin = 'anonymous';
     
-    const metadata = await this.extractMetadata(element);
+    const metadata = await this.extractMetadata(element, file);
     
     const videoFile: VideoFile = {
       file,
@@ -81,7 +81,7 @@ export class VideoManager {
   /**
    * Extract video metadata
    */
-  private async extractMetadata(video: HTMLVideoElement): Promise<VideoMetadata> {
+  private async extractMetadata(video: HTMLVideoElement, file: File): Promise<VideoMetadata> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Timeout loading video metadata'));
@@ -91,6 +91,9 @@ export class VideoManager {
         clearTimeout(timeout);
         
         const metadata: VideoMetadata = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
           duration: video.duration,
           width: video.videoWidth,
           height: video.videoHeight,

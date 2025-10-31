@@ -4,7 +4,7 @@
 
 import { injectable } from 'inversify';
 import type { ICapabilityDetectionService } from '../contracts/ICapabilityDetectionService';
-import type { ProcessingCapabilities } from '../../domain/render-pipeline-models';
+import type { ProcessingCapabilities } from '$shared/types/EffectTypes';
 
 @injectable()
 export class CapabilityDetectionService implements ICapabilityDetectionService {
@@ -42,7 +42,7 @@ export class CapabilityDetectionService implements ICapabilityDetectionService {
     let gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
     
     if (!gl) {
-      gl = canvas.getContext('webgl') as WebGLRenderingContext;
+      gl = canvas.getContext('webgl') as WebGL2RenderingContext;
     }
 
     if (gl) {

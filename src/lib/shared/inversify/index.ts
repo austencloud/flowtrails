@@ -2,6 +2,8 @@
  * Barrel export for InversifyJS setup
  */
 
+import { container } from './container';
+
 export { container } from './container';
 export { TYPES } from './types';
 

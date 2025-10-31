@@ -10,8 +10,10 @@ export const TYPES = {
   // Video Management Services  
   IVideoManagerService: Symbol.for('IVideoManagerService'),
   
+  // Effects Services
+  ILedDetectionService: Symbol.for('ILedDetectionService'),
+  ITrailEffectsService: Symbol.for('ITrailEffectsService'),
+
   // Future services
-  IThresholdDetectionService: Symbol.for('IThresholdDetectionService'),
-  ITrailEffectService: Symbol.for('ITrailEffectService'),
   IVideoExportService: Symbol.for('IVideoExportService')
 } as const;

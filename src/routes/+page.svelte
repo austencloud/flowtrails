@@ -1,103 +1,691 @@
 <script lang="ts">
   import '../app'; // Initialize DI container
   import { VideoUploader } from '$video';
-  import { RenderCanvas } from '$pipeline';
+  import { createEffectsState } from '$effects/state/effects-state.svelte';
+  import LedDetectionVisualizer from '$effects/components/LedDetectionVisualizer.svelte';
   import type { VideoFile } from '$shared';
 
   let currentVideo: VideoFile | null = $state(null);
+  let processedVideo: HTMLVideoElement = $state() as HTMLVideoElement;
+  let isPlaying = $state(false);
+  let currentTime = $state(0);
+  let duration = $state(0);
+
+  // Effects state
+  const effectsState = createEffectsState();
+
+  // Preload test video on mount
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      preloadTestVideo();
+    }
+  });
+
+  // Sync video playback
+  $effect(() => {
+    if (currentVideo?.element && processedVideo) {
+      // Set up processed video to mirror original
+      processedVideo.src = currentVideo.url;
+
+      // Sync playback events
+      const originalVideo = currentVideo.element;
+
+      const syncPlayback = () => {
+        if (Math.abs(processedVideo.currentTime - originalVideo.currentTime) > 0.1) {
+          processedVideo.currentTime = originalVideo.currentTime;
+        }
+      };
+
+      const updateState = () => {
+        isPlaying = !originalVideo.paused;
+        currentTime = originalVideo.currentTime;
+        duration = originalVideo.duration || 0;
+      };
+
+      originalVideo.addEventListener('play', () => {
+        processedVideo.play();
+        updateState();
+      });
+
+      originalVideo.addEventListener('pause', () => {
+        processedVideo.pause();
+        updateState();
+      });
+
+      originalVideo.addEventListener('timeupdate', () => {
+        syncPlayback();
+        updateState();
+      });
+
+      originalVideo.addEventListener('seeked', () => {
+        processedVideo.currentTime = originalVideo.currentTime;
+        updateState();
+      });
+
+      originalVideo.addEventListener('loadedmetadata', updateState);
+
+      return () => {
+        // Cleanup listeners would go here
+      };
+    }
+  });
+
+  async function preloadTestVideo() {
+    try {
+      const response = await fetch('/test-videos/NPNP-lambda.mp4');
+      const blob = await response.blob();
+      const file = new File([blob], 'NPNP-lambda.mp4', { type: 'video/mp4' });
+
+      // Create video element to get metadata
+      const video = document.createElement('video');
+      const url = URL.createObjectURL(blob);
+
+      video.onloadedmetadata = () => {
+        const testVideo: VideoFile = {
+          file,
+          url,
+          element: video,
+          metadata: {
+            name: 'NPNP-lambda.mp4',
+            size: blob.size,
+            type: 'video/mp4',
+            format: 'mp4',
+            duration: video.duration,
+            width: video.videoWidth,
+            height: video.videoHeight,
+            fps: 30 // Estimated
+          }
+        };
+
+        currentVideo = testVideo;
+        console.log('✅ Test video preloaded:', testVideo.metadata);
+      };
+
+      video.src = url;
+    } catch (error) {
+      console.warn('Could not preload test video:', error);
+    }
+  }
 
   function handleVideoLoaded(video: VideoFile) {
     currentVideo = video;
     console.log('Video loaded:', video);
   }
+
+  // Custom playback controls
+  function togglePlayPause() {
+    if (currentVideo?.element) {
+      if (isPlaying) {
+        currentVideo.element.pause();
+      } else {
+        currentVideo.element.play();
+      }
+    }
+  }
+
+  function seekTo(time: number) {
+    if (currentVideo?.element) {
+      currentVideo.element.currentTime = time;
+    }
+  }
+
+  function formatTime(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
 </script>
 
 <main>
-  <h1>ARFlowArts Clone</h1>
-  <p>High-performance web-based flow arts video processing</p>
+  <!-- Header -->
+  <header class="app-header">
+    <h1>FlowTrails</h1>
+    <div class="header-controls">
+      <VideoUploader onVideoLoaded={handleVideoLoaded} compact={true} />
+    </div>
+  </header>
 
-  <section class="video-section">
-    <h2>1. Upload Video</h2>
-    <VideoUploader onVideoLoaded={handleVideoLoaded} />
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Video Processing Area -->
+    <section class="video-workspace">
+      <div class="video-panels">
+        <!-- Original Video -->
+        <div class="video-panel">
+          <div class="panel-header">
+            <h3>Original</h3>
+            <div class="video-info">
+              {#if currentVideo}
+                <span class="duration">{Math.round(currentVideo.metadata.duration)}s</span>
+                <span class="resolution">{currentVideo.metadata.width}×{currentVideo.metadata.height}</span>
+              {/if}
+            </div>
+          </div>
+          <div class="video-container">
+            {#if currentVideo}
+              <video
+                bind:this={currentVideo.element}
+                class="main-video"
+                muted
+              >
+                <source src={currentVideo.url} type="video/{currentVideo.metadata.format}">
+                Your browser does not support the video tag.
+              </video>
+            {:else}
+              <div class="video-placeholder">
+                <div class="placeholder-content">
+                  <div class="placeholder-icon">📹</div>
+                  <p>Loading video...</p>
+                </div>
+              </div>
+            {/if}
+          </div>
+        </div>
 
-    {#if currentVideo}
-      <div class="video-preview">
-        <h3>Video Preview</h3>
-        <video
-          bind:this={currentVideo.element}
-          controls
-          width="400"
-          height="300"
-        >
-          <source src={currentVideo.url} type="video/{currentVideo.metadata.format}">
-          Your browser does not support the video tag.
-        </video>
+        <!-- Processed Video -->
+        <div class="video-panel">
+          <div class="panel-header">
+            <h3>Processed</h3>
+            <div class="video-info">
+              <span class="status">Synchronized playback</span>
+            </div>
+          </div>
+          <div class="video-container">
+            {#if currentVideo}
+              <video
+                bind:this={processedVideo}
+                class="main-video"
+                muted
+              >
+                <source src={currentVideo.url} type="video/{currentVideo.metadata.format}">
+                Your browser does not support the video tag.
+              </video>
+            {:else}
+              <div class="video-placeholder processed">
+                {#if currentVideo}
+                  <!-- LED Detection Visualizer -->
+                  <LedDetectionVisualizer
+                    videoElement={currentVideo?.element || null}
+                    width={400}
+                    height={300}
+                    showOverlay={true}
+                    showStats={true}
+                  />
+                {:else}
+                  <div class="placeholder-content">
+                    <div class="placeholder-icon">✨</div>
+                    <p>Effects preview</p>
+                    <small>Real-time processing will appear here</small>
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        </div>
       </div>
-    {/if}
-  </section>
 
-  <section class="pipeline-section">
-    <h2>2. Effect Pipeline</h2>
-    <p>High-performance WebGL/WebGPU rendering engine</p>
-    <RenderCanvas width={800} height={450} />
-  </section>
+      <!-- Custom Video Controls -->
+      {#if currentVideo}
+        <div class="video-controls">
+          <div class="control-bar">
+            <button class="play-btn" onclick={togglePlayPause}>
+              {isPlaying ? '⏸️' : '▶️'}
+            </button>
 
-  <section class="coming-soon">
-    <h2>Coming Soon</h2>
-    <ul>
-      <li>🎯 LED Detection & Thresholding</li>
-      <li>✨ Real-time Trail Effects</li>
-      <li>📹 Video Export & Download</li>
-    </ul>
-  </section>
+            <div class="timeline-container">
+              <input
+                type="range"
+                class="timeline"
+                min="0"
+                max={duration || 0}
+                value={currentTime}
+                oninput={(e) => seekTo(Number((e.target as HTMLInputElement)?.value || 0))}
+              />
+              <div class="time-display">
+                <span class="current-time">{formatTime(currentTime)}</span>
+                <span class="duration">{formatTime(duration)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      {/if}
+    </section>
+
+    <!-- Controls Panel -->
+    <section class="controls-panel">
+
+      <div class="effect-controls">
+        <h3>Effect Pipeline</h3>
+        <div class="control-groups">
+          <div class="control-group">
+            <h4>🎯 LED Detection</h4>
+            <div class="controls">
+              <label>
+                Threshold: <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={effectsState.ledThreshold * 100}
+                  oninput={(e) => effectsState.ledThreshold = Number((e.target as HTMLInputElement).value) / 100}
+                />
+              </label>
+              <label>
+                Sensitivity: <input
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={effectsState.ledSensitivity * 100}
+                  oninput={(e) => effectsState.ledSensitivity = Number((e.target as HTMLInputElement).value) / 100}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <h4>✨ Trail Effects</h4>
+            <div class="controls">
+              <label>
+                Length: <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={effectsState.trailLength * 100}
+                  oninput={(e) => effectsState.trailLength = Number((e.target as HTMLInputElement).value) / 100}
+                />
+              </label>
+              <label>
+                Fade: <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={effectsState.trailFade * 100}
+                  oninput={(e) => effectsState.trailFade = Number((e.target as HTMLInputElement).value) / 100}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <h4>📹 Export</h4>
+            <div class="controls">
+              <button class="export-btn" disabled>Export Video</button>
+              <button class="export-btn" disabled>Export GIF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 </main>
 
 <style>
-  main {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-
-  h1 {
-    color: #007acc;
-    text-align: center;
-    margin-bottom: 0.5rem;
-  }
-
-  main > p {
-    text-align: center;
-    color: #666;
-    margin-bottom: 3rem;
-  }
-
-  .video-section, .pipeline-section {
-    margin-bottom: 3rem;
-  }
-
-  .video-preview {
-    margin-top: 2rem;
-    text-align: center;
-  }
-
-  .video-preview video {
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-
-  .coming-soon {
-    background: #f8f9fa;
-    padding: 2rem;
-    border-radius: 8px;
-  }
-
-  .coming-soon ul {
-    list-style: none;
+  /* Global Dark Theme */
+  :global(body) {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
     padding: 0;
   }
 
-  .coming-soon li {
-    padding: 0.5rem 0;
+  main {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .app-header {
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #333;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .app-header h1 {
+    color: #00d4ff;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  /* Main Content */
+  .main-content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    padding: 2rem;
+    max-height: calc(100vh - 80px);
+    overflow: hidden;
+  }
+
+  /* Video Workspace */
+  .video-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .video-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    flex: 1;
+  }
+
+  .video-panel {
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid #444;
+    border-radius: 12px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+
+  .panel-header {
+    background: rgba(40, 40, 40, 0.9);
+    padding: 1rem;
+    border-bottom: 1px solid #555;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-header h3 {
+    color: #fff;
+    margin: 0;
     font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .video-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+
+  .video-info .duration {
+    color: #00d4ff;
+  }
+
+  .video-info .resolution {
+    color: #4ade80;
+  }
+
+  .video-info .status {
+    color: #fbbf24;
+  }
+
+  .video-container {
+    aspect-ratio: 1;
+    position: relative;
+    background: #000;
+  }
+
+  .main-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+  }
+
+  .video-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+    border: 2px dashed #444;
+  }
+
+  .video-placeholder.processed {
+    background: linear-gradient(45deg, #1a1a2a, #2a2a3a);
+    border-color: #4ade80;
+  }
+
+  .placeholder-content {
+    text-align: center;
+    color: #666;
+  }
+
+  .placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .placeholder-content p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+  }
+
+  .placeholder-content small {
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  /* Controls Panel */
+  .controls-panel {
+    background: rgba(20, 20, 20, 0.9);
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    overflow-y: auto;
+    backdrop-filter: blur(10px);
+  }
+
+  /* Video Controls */
+  .video-controls {
+    margin-top: 1rem;
+    background: rgba(20, 20, 20, 0.9);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+  }
+
+  .control-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .play-btn {
+    background: rgba(0, 212, 255, 0.2);
+    border: 1px solid #00d4ff;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #00d4ff;
+    transition: all 0.2s;
+  }
+
+  .play-btn:hover {
+    background: rgba(0, 212, 255, 0.3);
+    transform: scale(1.05);
+  }
+
+  .timeline-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .timeline {
+    width: 100%;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .timeline::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #00d4ff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  }
+
+  .timeline::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #00d4ff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  }
+
+  .time-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #aaa;
+    font-family: monospace;
+  }
+
+  .current-time {
+    color: #00d4ff;
+  }
+
+  .duration {
+    color: #888;
+  }
+
+  .effect-controls h3 {
+    color: #fff;
+    margin: 0 0 1.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  .control-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .control-group {
+    background: rgba(30, 30, 30, 0.6);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+
+  .control-group h4 {
+    color: #00d4ff;
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .controls label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+
+  .controls input[type="range"] {
+    width: 120px;
+    margin-left: 1rem;
+  }
+
+  .controls input[type="range"]:disabled {
+    opacity: 0.5;
+  }
+
+  .export-btn {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 0.5rem;
+  }
+
+  .export-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+  }
+
+  .export-btn:disabled {
+    background: #444;
+    color: #888;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1200px) {
+    .main-content {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+    }
+
+    .controls-panel {
+      max-height: 300px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .video-panels {
+      grid-template-columns: 1fr;
+    }
+
+    .app-header {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .main-content {
+      padding: 1rem;
+    }
   }
 </style>

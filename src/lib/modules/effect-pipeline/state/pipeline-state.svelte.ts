@@ -2,7 +2,8 @@
  * Reactive state management for the effect pipeline
  */
 
-import type { RenderBackend, RenderPipelineConfig, ProcessingCapabilities } from '../domain/RenderPipeline';
+import type { RenderBackend, RenderPipelineConfig } from '../domain/render-pipeline-models';
+import type { ProcessingCapabilities } from '$shared/types/EffectTypes';
 import type { EffectPipeline } from '$shared';
 import type { IRenderPipelineService } from '../services/contracts/IRenderPipelineService';
 import { MODULE_EVENTS, ModuleEventDispatcher, resolve, TYPES } from '$shared';
@@ -81,8 +82,10 @@ export function createPipelineState() {
     }
   }
 
-  // Event listeners for inter-module communication
+  // Event listeners for inter-module communication (client-side only)
   function setupEventListeners() {
+    if (typeof window === 'undefined') return () => {}; // Skip on server
+
     // Listen for video loaded events to auto-resize pipeline
     const cleanupVideoLoaded = ModuleEventDispatcher.listen(
       MODULE_EVENTS.VIDEO_LOADED,
