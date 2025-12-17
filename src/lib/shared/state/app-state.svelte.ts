@@ -12,6 +12,7 @@ import type { IVideoManagerService } from '$video';
 import type { IRenderPipelineService } from '$pipeline/services/contracts/IRenderPipelineService';
 import type { ICapabilityDetectionService } from '$pipeline/services/contracts/ICapabilityDetectionService';
 import type { ILedDetectionService } from '$effects/led-detection/services/contracts/ILedDetectionService';
+import type { IVideoSyncService } from '$video/services/contracts/IVideoSyncService';
 
 /**
  * Creates the unified application state with cross-module reactive coordination
@@ -20,6 +21,7 @@ import type { ILedDetectionService } from '$effects/led-detection/services/contr
 export function createAppState() {
   // Resolve services from DI container
   const videoService = resolve<IVideoManagerService>(TYPES.IVideoManagerService);
+  const videoSyncService = resolve<IVideoSyncService>(TYPES.IVideoSyncService);
   const pipelineService = resolve<IRenderPipelineService>(TYPES.IRenderPipelineService);
   const capabilityService = resolve<ICapabilityDetectionService>(TYPES.ICapabilityDetectionService);
   const ledDetectionService = resolve<ILedDetectionService>(TYPES.ILedDetectionService);
@@ -84,6 +86,7 @@ export function createAppState() {
     // Services (for advanced use cases)
     services: {
       video: videoService,
+      videoSync: videoSyncService,
       pipeline: pipelineService,
       capability: capabilityService,
       ledDetection: ledDetectionService

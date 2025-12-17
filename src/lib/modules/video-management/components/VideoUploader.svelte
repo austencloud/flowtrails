@@ -1,16 +1,29 @@
 <script lang="ts">
-  import { createVideoState } from '../state/video-state.svelte';
-  
-  // Props
+  import type { VideoFile } from '$shared/types/VideoTypes';
+
+  // Props - video state passed from parent
   let {
+    videoState,
     onVideoLoaded = () => {},
     acceptedFormats = '.mp4,.webm,.mov,.avi',
     maxSizeMB = 500,
     compact = false
-  } = $props();
+  } = $props<{
+    videoState: {
+      loading: boolean;
+      error: string | null;
+      currentVideo: VideoFile | null;
+      hasVideo: boolean;
+      loadVideo: (file: File) => Promise<void>;
+      unloadVideo: () => void;
+    };
+    onVideoLoaded?: (video: VideoFile) => void;
+    acceptedFormats?: string;
+    maxSizeMB?: number;
+    compact?: boolean;
+  }>();
 
-  // State
-  const videoState = createVideoState();
+  // Local state
   let dragOver = $state(false);
   let fileInput: HTMLInputElement;
 
@@ -183,13 +196,14 @@
 
   .compact-btn {
     background: rgba(40, 40, 40, 0.9);
-    color: #e0e0e0;
+    color: var(--color-text);
     border: 1px solid #555;
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    min-height: var(--touch-target-min);
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-fast);
     white-space: nowrap;
   }
 
@@ -217,8 +231,10 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #00d4ff;
+    color: var(--color-primary);
     font-size: 0.85rem;
+    min-height: var(--touch-target-min);
+    padding: 0.75rem 1rem;
   }
 
   .mini-spinner {
@@ -276,11 +292,12 @@
 
   .error button {
     margin-top: 1rem;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.25rem;
+    min-height: var(--touch-target-min);
     background: #007acc;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
   }
 
@@ -299,11 +316,12 @@
 
   .video-info button {
     margin-top: 1rem;
-    padding: 0.5rem 1rem;
-    background: #dc3545;
+    padding: 0.75rem 1.25rem;
+    min-height: var(--touch-target-min);
+    background: var(--color-error);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
   }
 </style>

@@ -1,34 +1,21 @@
 /**
  * InversifyJS container configuration
+ * Uses modular loading for better organization
  */
 
 import 'reflect-metadata';
 import { Container } from 'inversify';
-import { TYPES } from './types';
-
-// Import service implementations
-import { RenderPipelineService } from '$pipeline/services/implementations/RenderPipelineService';
-import { CapabilityDetectionService } from '$pipeline/services/implementations/CapabilityDetectionService';
-import { LedDetectionService } from '$lib/modules/effects/led-detection/services/implementations/LedDetectionService';
-import { VideoManagerService } from '$video/services/implementations/VideoManagerService';
-
-// Import service contracts
-import type { IRenderPipelineService } from '$pipeline/services/contracts/IRenderPipelineService';
-import type { ICapabilityDetectionService } from '$pipeline/services/contracts/ICapabilityDetectionService';
-import type { ILedDetectionService } from '$lib/modules/effects/led-detection/services/contracts/ILedDetectionService';
-import type { IVideoManagerService } from '$video/services/contracts/IVideoManagerService';
+import { videoModule, pipelineModule, effectsModule } from './modules';
 
 // Create container
 const container = new Container();
 
-// Bind Video Management services
-container.bind<IVideoManagerService>(TYPES.IVideoManagerService).to(VideoManagerService);
+// Load modules (order matters for dependencies)
+// Tier 2: Shared services
+container.load(videoModule);
+container.load(pipelineModule);
 
-// Bind Effect Pipeline services
-container.bind<IRenderPipelineService>(TYPES.IRenderPipelineService).to(RenderPipelineService);
-container.bind<ICapabilityDetectionService>(TYPES.ICapabilityDetectionService).to(CapabilityDetectionService);
-
-// Bind Effects services
-container.bind<ILedDetectionService>(TYPES.ILedDetectionService).to(LedDetectionService);
+// Tier 3: Feature services
+container.load(effectsModule);
 
 export { container };

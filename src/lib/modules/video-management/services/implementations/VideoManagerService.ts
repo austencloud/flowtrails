@@ -99,7 +99,7 @@ export class VideoManagerService implements IVideoManagerService {
           width: video.videoWidth,
           height: video.videoHeight,
           fps: this.estimateFPS(video),
-          format: video.src.split('.').pop()?.toLowerCase() || 'unknown'
+          format: file.name.split('.').pop()?.toLowerCase() || 'mp4'
         };
 
         resolve(metadata);

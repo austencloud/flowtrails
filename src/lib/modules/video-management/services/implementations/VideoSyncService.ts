@@ -1,41 +1,28 @@
 /**
- * Video Synchronization Service
+ * Video Synchronization Service Implementation
  * Handles synchronization between source and processed video elements
  */
 
-export interface VideoSyncConfig {
-  /** Source video element (controls playback) */
-  sourceVideo: HTMLVideoElement;
-  /** Target video element (follows source) */
-  targetVideo: HTMLVideoElement;
-  /** Sync tolerance in seconds (default: 0.1) */
-  syncTolerance?: number;
-  /** Callback when playback state changes */
-  onStateChange?: (state: {
-    isPlaying: boolean;
-    currentTime: number;
-    duration: number;
-  }) => void;
-}
+import { injectable } from 'inversify';
+import type { IVideoSyncService, VideoSyncConfig, VideoSyncState } from '../contracts/IVideoSyncService';
 
-export class VideoSyncService {
+@injectable()
+export class VideoSyncService implements IVideoSyncService {
   private config: VideoSyncConfig | null = null;
   private cleanupFunctions: Array<() => void> = [];
   private syncInterval: number | null = null;
 
-  /**
-   * Start syncing two video elements
-   */
   sync(config: VideoSyncConfig): () => void {
-    this.cleanup(); // Clean up any existing sync
+    this.cleanup();
     this.config = config;
 
     const { sourceVideo, targetVideo, syncTolerance = 0.1, onStateChange } = config;
 
-    // Set target video source
-    targetVideo.src = sourceVideo.src;
+    // Sync target src with source (only if source has a valid src)
+    if (sourceVideo.src && sourceVideo.src !== targetVideo.src) {
+      targetVideo.src = sourceVideo.src;
+    }
 
-    // Helper to sync playback position
     const syncPlayback = () => {
       const timeDiff = Math.abs(targetVideo.currentTime - sourceVideo.currentTime);
       if (timeDiff > syncTolerance) {
@@ -43,7 +30,6 @@ export class VideoSyncService {
       }
     };
 
-    // Helper to update state callback
     const updateState = () => {
       if (onStateChange) {
         onStateChange({
@@ -54,7 +40,6 @@ export class VideoSyncService {
       }
     };
 
-    // Event handlers
     const handlePlay = () => {
       targetVideo.play().catch(err => {
         console.warn('Failed to play target video:', err);
@@ -81,23 +66,27 @@ export class VideoSyncService {
       updateState();
     };
 
-    // Attach event listeners
     sourceVideo.addEventListener('play', handlePlay);
     sourceVideo.addEventListener('pause', handlePause);
     sourceVideo.addEventListener('timeupdate', handleTimeUpdate);
     sourceVideo.addEventListener('seeked', handleSeeked);
     sourceVideo.addEventListener('loadedmetadata', handleLoadedMetadata);
+    sourceVideo.addEventListener('canplay', updateState);
 
-    // Store cleanup functions
     this.cleanupFunctions = [
       () => sourceVideo.removeEventListener('play', handlePlay),
       () => sourceVideo.removeEventListener('pause', handlePause),
       () => sourceVideo.removeEventListener('timeupdate', handleTimeUpdate),
       () => sourceVideo.removeEventListener('seeked', handleSeeked),
-      () => sourceVideo.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      () => sourceVideo.removeEventListener('loadedmetadata', handleLoadedMetadata),
+      () => sourceVideo.removeEventListener('canplay', updateState)
     ];
 
-    // Periodic sync check (backup for missed events)
+    // Fire initial state immediately if video is already loaded
+    if (sourceVideo.readyState >= 1) {
+      updateState();
+    }
+
     this.syncInterval = window.setInterval(syncPlayback, 1000);
     this.cleanupFunctions.push(() => {
       if (this.syncInterval !== null) {
@@ -106,29 +95,19 @@ export class VideoSyncService {
       }
     });
 
-    // Return cleanup function
     return () => this.cleanup();
   }
 
-  /**
-   * Stop syncing and cleanup event listeners
-   */
   cleanup(): void {
     this.cleanupFunctions.forEach(fn => fn());
     this.cleanupFunctions = [];
     this.config = null;
   }
 
-  /**
-   * Check if currently syncing
-   */
   isSyncing(): boolean {
     return this.config !== null;
   }
 
-  /**
-   * Get current sync configuration
-   */
   getConfig(): VideoSyncConfig | null {
     return this.config;
   }

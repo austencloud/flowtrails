@@ -1,0 +1,49 @@
+/**
+ * FlowTrails Design Tokens
+ * Global CSS custom properties for consistent styling
+ */
+
+:root {
+  /* Touch Targets - WCAG/Mobile accessibility minimum */
+  --touch-target-min: 48px;
+  --touch-target-comfortable: 56px;
+
+  /* Interactive Element Sizing */
+  --slider-thumb-size: 24px;
+  --slider-thumb-size-lg: 28px;
+  --checkbox-size: 24px;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Colors - Brand */
+  --color-primary: #00d4ff;
+  --color-primary-dark: #0099cc;
+  --color-success: #4ade80;
+  --color-success-dark: #22c55e;
+  --color-error: #ef4444;
+  --color-warning: #ff6b00;
+
+  /* Colors - Neutral */
+  --color-bg-dark: #0a0a0a;
+  --color-bg-panel: rgba(20, 20, 20, 0.9);
+  --color-bg-control: rgba(30, 30, 30, 0.6);
+  --color-border: #333;
+  --color-border-light: #444;
+  --color-text: #e0e0e0;
+  --color-text-muted: #aaa;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}

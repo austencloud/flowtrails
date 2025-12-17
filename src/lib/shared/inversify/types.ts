@@ -7,8 +7,9 @@ export const TYPES = {
   IRenderPipelineService: Symbol.for('IRenderPipelineService'),
   ICapabilityDetectionService: Symbol.for('ICapabilityDetectionService'),
   
-  // Video Management Services  
+  // Video Management Services
   IVideoManagerService: Symbol.for('IVideoManagerService'),
+  IVideoSyncService: Symbol.for('IVideoSyncService'),
   
   // Effects Services
   ILedDetectionService: Symbol.for('ILedDetectionService'),

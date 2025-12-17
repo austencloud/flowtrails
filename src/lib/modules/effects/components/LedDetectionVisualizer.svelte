@@ -322,18 +322,19 @@
   }
 
   .detect-btn, .test-btn {
-    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: white;
     border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
+    padding: 0.75rem 1.25rem;
+    min-height: var(--touch-target-min);
+    border-radius: var(--radius-sm);
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-fast);
   }
 
   .test-btn {
-    background: linear-gradient(135deg, #ff6b00, #cc5500);
+    background: linear-gradient(135deg, var(--color-warning), #cc5500);
   }
 
   .detect-btn:hover, .test-btn:hover {
@@ -348,13 +349,20 @@
   .overlay-toggle {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: #ccc;
+    gap: 0.75rem;
+    color: var(--color-text-muted);
     font-size: 0.85rem;
     cursor: pointer;
+    min-height: var(--touch-target-min);
+    padding: 0.5rem 0.75rem;
   }
 
   .overlay-toggle input {
-    accent-color: #00d4ff;
+    accent-color: var(--color-primary);
+    width: var(--checkbox-size);
+    height: var(--checkbox-size);
+    min-width: var(--checkbox-size);
+    min-height: var(--checkbox-size);
+    cursor: pointer;
   }
 </style>

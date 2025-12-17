@@ -1,0 +1,191 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🚀🐛 Full Stack Debug (Server + Browser)",
+      "type": "compound",
+      "configurations": [
+        "🚀 Start FlowTrails Dev Server",
+        "🌐 Debug in Chrome"
+      ],
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 0
+      },
+      "stopAll": true
+    },
+    {
+      "name": "🚀 Start FlowTrails Dev Server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://localhost:7153)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      },
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 1
+      }
+    },
+    {
+      "name": "📱 Mobile Dev Server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/mobile-dev.ps1"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 2
+      }
+    },
+    {
+      "name": "🌐 Debug in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:7153",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "*",
+        "/./~/*": "${webRoot}/node_modules/*"
+      },
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 3
+      }
+    },
+    {
+      "name": "🌐 Debug in Edge",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:7153",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 4
+      }
+    },
+    {
+      "name": "🔧 Build FlowTrails",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "build"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 5
+      }
+    },
+    {
+      "name": "✅ Type Check",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "check"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 6
+      }
+    },
+    {
+      "name": "🧪 Run Tests",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 7
+      }
+    },
+    {
+      "name": "🧪 Test (Watch Mode)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:watch"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 8
+      }
+    },
+    {
+      "name": "📦 Install Dependencies",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["install"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "FlowTrails",
+        "order": 9
+      }
+    },
+    {
+      "name": "📋 Feedback: List Queue",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["fetch-feedback.js", "list"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "Feedback",
+        "order": 10
+      }
+    },
+    {
+      "name": "📋 Feedback: Claim Next",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["fetch-feedback.js"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "Feedback",
+        "order": 11
+      }
+    }
+  ]
+}
