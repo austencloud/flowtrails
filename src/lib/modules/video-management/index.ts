@@ -3,5 +3,5 @@
  */
 
 export * from './components';
-export * from './domain';
+export * from './services/contracts/IVideoManagerService';
 export * from './state';

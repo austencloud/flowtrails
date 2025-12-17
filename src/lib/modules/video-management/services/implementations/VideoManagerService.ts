@@ -1,43 +1,39 @@
 /**
- * Core video management business logic
+ * Video Manager Service Implementation
  * Handles video file loading, validation, and metadata extraction
  */
 
+import { injectable } from 'inversify';
 import type { VideoFile, VideoMetadata, VideoPlaybackState } from '$shared/types/VideoTypes';
-import { MODULE_EVENTS, ModuleEventDispatcher } from '$shared/events/ModuleEvents';
+import type { IVideoManagerService } from '../contracts/IVideoManagerService';
 
-export class VideoManager {
+@injectable()
+export class VideoManagerService implements IVideoManagerService {
   private currentVideo: VideoFile | null = null;
-  private supportedFormats = ['mp4', 'webm', 'mov', 'avi'];
+  private readonly supportedFormats = ['mp4', 'webm', 'mov', 'avi'] as const;
 
   /**
    * Load and validate a video file
    */
   async loadVideo(file: File): Promise<VideoFile> {
     this.validateFile(file);
-    
+
     const url = URL.createObjectURL(file);
     const element = document.createElement('video');
     element.src = url;
     element.crossOrigin = 'anonymous';
-    
+
     const metadata = await this.extractMetadata(element, file);
-    
+
     const videoFile: VideoFile = {
       file,
       url,
       metadata,
       element
     };
-    
+
     this.currentVideo = videoFile;
-    
-    // Notify other modules
-    ModuleEventDispatcher.dispatch(MODULE_EVENTS.VIDEO_LOADED, {
-      video: element,
-      metadata
-    });
-    
+
     return videoFile;
   }
 
@@ -49,8 +45,6 @@ export class VideoManager {
       URL.revokeObjectURL(this.currentVideo.url);
       this.currentVideo.element.remove();
       this.currentVideo = null;
-      
-      ModuleEventDispatcher.dispatch(MODULE_EVENTS.VIDEO_UNLOADED, {});
     }
   }
 
@@ -62,15 +56,22 @@ export class VideoManager {
   }
 
   /**
+   * Get list of supported video formats
+   */
+  getSupportedFormats(): readonly string[] {
+    return this.supportedFormats;
+  }
+
+  /**
    * Validate file format and size
    */
-  private validateFile(file: File): void {
+  validateFile(file: File): void {
     const extension = file.name.split('.').pop()?.toLowerCase();
-    
-    if (!extension || !this.supportedFormats.includes(extension)) {
+
+    if (!extension || !this.supportedFormats.includes(extension as any)) {
       throw new Error(`Unsupported file format: ${extension}. Supported formats: ${this.supportedFormats.join(', ')}`);
     }
-    
+
     // Check file size (limit to 500MB)
     const maxSize = 500 * 1024 * 1024;
     if (file.size > maxSize) {
@@ -89,7 +90,7 @@ export class VideoManager {
 
       video.addEventListener('loadedmetadata', () => {
         clearTimeout(timeout);
-        
+
         const metadata: VideoMetadata = {
           name: file.name,
           size: file.size,
@@ -100,7 +101,7 @@ export class VideoManager {
           fps: this.estimateFPS(video),
           format: video.src.split('.').pop()?.toLowerCase() || 'unknown'
         };
-        
+
         resolve(metadata);
       });
 

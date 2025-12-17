@@ -3,10 +3,9 @@
  */
 
 import type { VideoFile, VideoPlaybackState } from '$shared/types/VideoTypes';
-import { VideoManager } from '../domain/VideoManager';
+import type { IVideoManagerService } from '../services/contracts/IVideoManagerService';
 
-export function createVideoState() {
-  const videoManager = new VideoManager();
+export function createVideoState(videoService: IVideoManagerService) {
   
   // Reactive state
   let currentVideo = $state<VideoFile | null>(null);
@@ -28,11 +27,11 @@ export function createVideoState() {
   async function loadVideo(file: File) {
     loading = true;
     error = null;
-    
+
     try {
-      const videoFile = await videoManager.loadVideo(file);
+      const videoFile = await videoService.loadVideo(file);
       currentVideo = videoFile;
-      playbackState = videoManager.createPlaybackState(videoFile.element);
+      playbackState = videoService.createPlaybackState(videoFile.element);
       
       // Set up playback state tracking
       setupPlaybackTracking(videoFile.element);
@@ -45,7 +44,7 @@ export function createVideoState() {
   }
 
   function unloadVideo() {
-    videoManager.unloadVideo();
+    videoService.unloadVideo();
     currentVideo = null;
     playbackState = null;
     error = null;

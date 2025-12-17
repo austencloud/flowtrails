@@ -6,11 +6,8 @@ import type { RenderBackend, RenderPipelineConfig } from '../domain/render-pipel
 import type { ProcessingCapabilities } from '$shared/types/EffectTypes';
 import type { EffectPipeline } from '$shared';
 import type { IRenderPipelineService } from '../services/contracts/IRenderPipelineService';
-import { MODULE_EVENTS, ModuleEventDispatcher, resolve, TYPES } from '$shared';
 
-export function createPipelineState() {
-  // Get service from DI container
-  const pipelineService = resolve<IRenderPipelineService>(TYPES.IRenderPipelineService);
+export function createPipelineState(pipelineService: IRenderPipelineService) {
 
   // Reactive state
   let initialized = $state(false);
@@ -82,32 +79,8 @@ export function createPipelineState() {
     }
   }
 
-  // Event listeners for inter-module communication (client-side only)
-  function setupEventListeners() {
-    if (typeof window === 'undefined') return () => {}; // Skip on server
-
-    // Listen for video loaded events to auto-resize pipeline
-    const cleanupVideoLoaded = ModuleEventDispatcher.listen(
-      MODULE_EVENTS.VIDEO_LOADED,
-      (event) => {
-        const { metadata } = event.detail;
-        if (initialized && metadata) {
-          resizePipeline(metadata.width, metadata.height);
-        }
-      }
-    );
-
-    // Cleanup function
-    return () => {
-      cleanupVideoLoaded();
-    };
-  }
-
-  // Auto-setup event listeners
-  const cleanup = setupEventListeners();
-
   return {
-    // State
+    // Service access (for external coordination)
     get pipelineService() { return pipelineService; },
     get initialized() { return initialized; },
     get backend() { return backend; },
@@ -125,9 +98,6 @@ export function createPipelineState() {
     // Actions
     initializePipeline,
     resizePipeline,
-    destroyPipeline,
-
-    // Cleanup
-    cleanup
+    destroyPipeline
   };
 }

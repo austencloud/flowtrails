@@ -4,7 +4,6 @@
 
 import { injectable, inject } from 'inversify';
 import { TYPES } from '$shared/inversify';
-import { MODULE_EVENTS, ModuleEventDispatcher } from '$shared';
 import type { IRenderPipelineService } from '../contracts/IRenderPipelineService';
 import type { ICapabilityDetectionService } from '../contracts/ICapabilityDetectionService';
 import type {
@@ -54,9 +53,8 @@ export class RenderPipelineService implements IRenderPipelineService {
             renderTargets: this.pipeline!
           };
 
-          ModuleEventDispatcher.dispatch(MODULE_EVENTS.PIPELINE_INITIALIZED, result);
           console.log(`✅ Initialized ${backend} rendering pipeline`);
-          
+
           return result;
         }
       } catch (error) {
@@ -178,12 +176,7 @@ export class RenderPipelineService implements IRenderPipelineService {
       this.pipeline = this.createWebGLRenderTargets(width, height);
     }
 
-    if (this.pipeline) {
-      ModuleEventDispatcher.dispatch(MODULE_EVENTS.RENDER_TARGET_READY, {
-        pipeline: this.pipeline,
-        backend: this.backend
-      });
-    }
+    // Render targets created successfully
   }
 
   private async createWebGPURenderTargets(width: number, height: number): Promise<EffectPipeline> {
@@ -300,7 +293,5 @@ export class RenderPipelineService implements IRenderPipelineService {
     this.device = null;
     this.canvas = null;
     this.config = null;
-    
-    ModuleEventDispatcher.dispatch(MODULE_EVENTS.PIPELINE_DESTROYED, {});
   }
 }

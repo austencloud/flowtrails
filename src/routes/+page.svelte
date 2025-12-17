@@ -1,18 +1,22 @@
 <script lang="ts">
   import '../app'; // Initialize DI container
   import { VideoUploader } from '$video';
-  import { createEffectsState } from '$effects/state/effects-state.svelte';
   import LedDetectionVisualizer from '$effects/components/LedDetectionVisualizer.svelte';
-  import type { VideoFile } from '$shared';
+  import { createAppState } from '$shared/state/app-state.svelte';
+  import { VideoSyncService } from '$video/services/VideoSyncService';
 
-  let currentVideo: VideoFile | null = $state(null);
-  let processedVideo: HTMLVideoElement = $state() as HTMLVideoElement;
+  // Create unified app state (single source of truth)
+  const appState = createAppState();
+  const { video, pipeline, effects } = appState;
+
+  // Video sync service
+  const videoSyncService = new VideoSyncService();
+
+  // Local UI state
+  let processedVideo: HTMLVideoElement;
   let isPlaying = $state(false);
   let currentTime = $state(0);
   let duration = $state(0);
-
-  // Effects state
-  const effectsState = createEffectsState();
 
   // Preload test video on mount
   $effect(() => {
@@ -21,52 +25,21 @@
     }
   });
 
-  // Sync video playback
+  // Set up video synchronization when both videos are ready
   $effect(() => {
-    if (currentVideo?.element && processedVideo) {
-      // Set up processed video to mirror original
-      processedVideo.src = currentVideo.url;
-
-      // Sync playback events
-      const originalVideo = currentVideo.element;
-
-      const syncPlayback = () => {
-        if (Math.abs(processedVideo.currentTime - originalVideo.currentTime) > 0.1) {
-          processedVideo.currentTime = originalVideo.currentTime;
+    if (video.currentVideo?.element && processedVideo) {
+      const cleanup = videoSyncService.sync({
+        sourceVideo: video.currentVideo.element,
+        targetVideo: processedVideo,
+        onStateChange: (state) => {
+          isPlaying = state.isPlaying;
+          currentTime = state.currentTime;
+          duration = state.duration;
         }
-      };
-
-      const updateState = () => {
-        isPlaying = !originalVideo.paused;
-        currentTime = originalVideo.currentTime;
-        duration = originalVideo.duration || 0;
-      };
-
-      originalVideo.addEventListener('play', () => {
-        processedVideo.play();
-        updateState();
       });
 
-      originalVideo.addEventListener('pause', () => {
-        processedVideo.pause();
-        updateState();
-      });
-
-      originalVideo.addEventListener('timeupdate', () => {
-        syncPlayback();
-        updateState();
-      });
-
-      originalVideo.addEventListener('seeked', () => {
-        processedVideo.currentTime = originalVideo.currentTime;
-        updateState();
-      });
-
-      originalVideo.addEventListener('loadedmetadata', updateState);
-
-      return () => {
-        // Cleanup listeners would go here
-      };
+      // Cleanup on state change
+      return cleanup;
     }
   });
 
@@ -75,58 +48,27 @@
       const response = await fetch('/test-videos/NPNP-lambda.mp4');
       const blob = await response.blob();
       const file = new File([blob], 'NPNP-lambda.mp4', { type: 'video/mp4' });
-
-      // Create video element to get metadata
-      const video = document.createElement('video');
-      const url = URL.createObjectURL(blob);
-
-      video.onloadedmetadata = () => {
-        const testVideo: VideoFile = {
-          file,
-          url,
-          element: video,
-          metadata: {
-            name: 'NPNP-lambda.mp4',
-            size: blob.size,
-            type: 'video/mp4',
-            format: 'mp4',
-            duration: video.duration,
-            width: video.videoWidth,
-            height: video.videoHeight,
-            fps: 30 // Estimated
-          }
-        };
-
-        currentVideo = testVideo;
-        console.log('✅ Test video preloaded:', testVideo.metadata);
-      };
-
-      video.src = url;
+      await video.loadVideo(file);
+      console.log('✅ Test video preloaded');
     } catch (error) {
       console.warn('Could not preload test video:', error);
     }
   }
 
-  function handleVideoLoaded(video: VideoFile) {
-    currentVideo = video;
-    console.log('Video loaded:', video);
+  function handleVideoLoaded(file: File) {
+    video.loadVideo(file);
   }
 
-  // Custom playback controls
   function togglePlayPause() {
-    if (currentVideo?.element) {
-      if (isPlaying) {
-        currentVideo.element.pause();
-      } else {
-        currentVideo.element.play();
-      }
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play();
     }
   }
 
   function seekTo(time: number) {
-    if (currentVideo?.element) {
-      currentVideo.element.currentTime = time;
-    }
+    video.seek(time);
   }
 
   function formatTime(seconds: number): string {
@@ -155,20 +97,20 @@
           <div class="panel-header">
             <h3>Original</h3>
             <div class="video-info">
-              {#if currentVideo}
-                <span class="duration">{Math.round(currentVideo.metadata.duration)}s</span>
-                <span class="resolution">{currentVideo.metadata.width}×{currentVideo.metadata.height}</span>
+              {#if video.currentVideo}
+                <span class="duration">{Math.round(video.currentVideo.metadata.duration)}s</span>
+                <span class="resolution">{video.currentVideo.metadata.width}×{video.currentVideo.metadata.height}</span>
               {/if}
             </div>
           </div>
           <div class="video-container">
-            {#if currentVideo}
+            {#if video.currentVideo}
               <video
-                bind:this={currentVideo.element}
+                bind:this={video.currentVideo.element}
                 class="main-video"
                 muted
               >
-                <source src={currentVideo.url} type="video/{currentVideo.metadata.format}">
+                <source src={video.currentVideo.url} type="video/{video.currentVideo.metadata.format}">
                 Your browser does not support the video tag.
               </video>
             {:else}
@@ -191,21 +133,21 @@
             </div>
           </div>
           <div class="video-container">
-            {#if currentVideo}
+            {#if video.currentVideo}
               <video
                 bind:this={processedVideo}
                 class="main-video"
                 muted
               >
-                <source src={currentVideo.url} type="video/{currentVideo.metadata.format}">
+                <source src={video.currentVideo.url} type="video/{video.currentVideo.metadata.format}">
                 Your browser does not support the video tag.
               </video>
             {:else}
               <div class="video-placeholder processed">
-                {#if currentVideo}
+                {#if video.currentVideo}
                   <!-- LED Detection Visualizer -->
                   <LedDetectionVisualizer
-                    videoElement={currentVideo?.element || null}
+                    videoElement={video.currentVideo?.element || null}
                     width={400}
                     height={300}
                     showOverlay={true}
@@ -225,7 +167,7 @@
       </div>
 
       <!-- Custom Video Controls -->
-      {#if currentVideo}
+      {#if video.currentVideo}
         <div class="video-controls">
           <div class="control-bar">
             <button class="play-btn" onclick={togglePlayPause}>
@@ -265,8 +207,8 @@
                   type="range"
                   min="0"
                   max="100"
-                  value={effectsState.ledThreshold * 100}
-                  oninput={(e) => effectsState.ledThreshold = Number((e.target as HTMLInputElement).value) / 100}
+                  value={effects.ledThreshold * 100}
+                  oninput={(e) => effects.ledThreshold = Number((e.target as HTMLInputElement).value) / 100}
                 />
               </label>
               <label>
@@ -274,8 +216,8 @@
                   type="range"
                   min="0"
                   max="200"
-                  value={effectsState.ledSensitivity * 100}
-                  oninput={(e) => effectsState.ledSensitivity = Number((e.target as HTMLInputElement).value) / 100}
+                  value={effects.ledSensitivity * 100}
+                  oninput={(e) => effects.ledSensitivity = Number((e.target as HTMLInputElement).value) / 100}
                 />
               </label>
             </div>
@@ -289,8 +231,8 @@
                   type="range"
                   min="0"
                   max="100"
-                  value={effectsState.trailLength * 100}
-                  oninput={(e) => effectsState.trailLength = Number((e.target as HTMLInputElement).value) / 100}
+                  value={effects.trailLength * 100}
+                  oninput={(e) => effects.trailLength = Number((e.target as HTMLInputElement).value) / 100}
                 />
               </label>
               <label>
@@ -298,8 +240,8 @@
                   type="range"
                   min="0"
                   max="100"
-                  value={effectsState.trailFade * 100}
-                  oninput={(e) => effectsState.trailFade = Number((e.target as HTMLInputElement).value) / 100}
+                  value={effects.trailFade * 100}
+                  oninput={(e) => effects.trailFade = Number((e.target as HTMLInputElement).value) / 100}
                 />
               </label>
             </div>

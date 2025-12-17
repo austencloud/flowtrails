@@ -3,9 +3,8 @@
  * Reactive state for LED detection and trail effects
  */
 
-import { resolve, TYPES } from '$shared';
-import type { 
-  ILedDetectionService, 
+import type {
+  ILedDetectionService,
   LedDetectionConfig,
   LedDetectionResult,
   ITrailEffectsService,
@@ -39,9 +38,7 @@ export interface EffectsState {
   };
 }
 
-export function createEffectsState() {
-  // Services
-  const ledDetectionService = resolve(TYPES.ILedDetectionService) as ILedDetectionService;
+export function createEffectsState(ledDetectionService: ILedDetectionService) {
   
   // Reactive state
   let state = $state<EffectsState>({
